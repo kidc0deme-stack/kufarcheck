@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kufar Checker</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --primary: #6c5ce7;
+  --primary-light: #a29bfe;
+  --text: #e8e8ee;
+  --text2: #9a9ab0;
+  --danger: #ff6b6b;
+  --success: #51cf66;
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+.header {
+  background: var(--surface);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--surface2);
+}
+.header h1 { font-size: 20px; font-weight: 700; }
+.header .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.container { padding: 16px 16px 0; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+.stat-card .num { font-size: 24px; font-weight: 700; color: var(--primary-light); }
+.stat-card .label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 20px 0 10px;
+}
+
+.form-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.form-card label {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.form-card select, .form-card input {
+  background: var(--surface2);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  padding: 12px;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+.form-card select:focus, .form-card input:focus {
+  border-color: var(--primary);
+}
+.form-card select option { background: var(--surface2); }
+
+.btn {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.btn:active { opacity: .7; }
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.filter-list { display: flex; flex-direction: column; gap: 8px; }
+.filter-item {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.filter-info { flex: 1; min-width: 0; }
+.filter-info .city { font-weight: 600; font-size: 15px; }
+.filter-info .meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.filter-actions { display: flex; gap: 6px; align-items: center; }
+.toggle-switch {
+  position: relative;
+  width: 44px; height: 24px;
+  background: var(--surface2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.toggle-switch.active { background: var(--primary); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+.toggle-switch.active::after { transform: translateX(20px); }
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface);
+  color: var(--text);
+  padding: 14px 24px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 100;
+  transition: transform .3s;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  border-left: 3px solid var(--primary);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text2);
+}
+.spinner {
+  width: 30px; height: 30px;
+  border: 3px solid var(--surface2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text2);
+}
+.empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="dot" id="statusDot"></div>
+  <h1>Kufar Checker</h1>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="num" id="statFilters">-</div>
+      <div class="label">Фильтров</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="statSeen">-</div>
+      <div class="label">Объявлений</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="statPoll">-</div>
+      <div class="label">Интервал (с)</div>
+    </div>
+  </div>
+
+  <div class="section-title">Добавить фильтр</div>
+  <div class="form-card">
+    <label>Город</label>
+    <select id="citySelect"><option value="">-- Выберите город --</option></select>
+
+    <label>Категория (необязательно)</label>
+    <select id="catSelect">
+      <option value="">Все категории</option>
+    </select>
+
+    <label>Поиск по ключевым словам</label>
+    <input type="text" id="queryInput" placeholder="например: iPhone 15">
+
+    <button class="btn btn-primary" id="addBtn" style="margin-top:4px;">
+      + Добавить фильтр
+    </button>
+  </div>
+
+  <div class="section-title">Мои фильтры</div>
+  <div id="filterList" class="filter-list">
+    <div class="loading">
+      <div class="spinner"></div>
+      Загрузка...
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  var API = 'http://127.0.0.1:8080';
+
+  var cityNames = {
+    minsk: 'Minsk',
+    brest: 'Brest',
+    gomel: 'Gomel',
+    grodno: 'Grodno',
+    mogilev: 'Mogilev',
+    vitebsk: 'Vitebsk',
+    minskaya_oblast: 'Minsk area'
+  };
+
+  var catNames = {
+    transport: 'Transport',
+    elektro: 'Electronics',
+    phones: 'Phones',
+    comp: 'Computers',
+    home: 'Home',
+    garden: 'Garden',
+    clothes: 'Clothes',
+    hobbies: 'Hobbies',
+    animals: 'Animals',
+    beauty: 'Beauty',
+    services: 'Services',
+    work: 'Work',
+    other: 'Other'
+  };
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function fillSelect(selectId, items, placeholder) {
+    var sel = $(selectId);
+    if (!sel) return;
+    sel.innerHTML = '';
+    var ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder || '--';
+    sel.appendChild(ph);
+    Object.keys(items).forEach(function(key) {
+      var o = document.createElement('option');
+      o.value = key;
+      o.textContent = items[key];
+      sel.appendChild(o);
+    });
+  }
+
+  function initSelects() {
+    fillSelect('citySelect', cityNames, '-- Выберите город --');
+    fillSelect('catSelect', catNames, 'Все категории');
+  }
+
+  function api(url, options) {
+    return fetch(API + url, options).then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function showToast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  function renderFilter(f) {
+    var cityLabel = cityNames[f.city] || f.city;
+    var meta = [f.category, f.query].filter(Boolean).join(' - ') || 'Без фильтров';
+    var div = document.createElement('div');
+    div.className = 'filter-item';
+    div.innerHTML =
+      '<div class="filter-info">' +
+        '<div class="city">' + cityLabel + '</div>' +
+        '<div class="meta">' + meta + '</div>' +
+      '</div>' +
+      '<div class="filter-actions">' +
+        '<div class="toggle-switch ' + (f.active ? 'active' : '') + '" data-id="' + f.id + '"></div>' +
+        '<button class="btn-danger" data-id="' + f.id + '">x</button>' +
+      '</div>';
+    return div;
+  }
+
+  function loadFilters() {
+    var container = $('filterList');
+    api('/filters').then(function(filters) {
+      container.innerHTML = '';
+      if (!filters.length) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<div class="icon">🔍</div>' +
+            '<div>Нет фильтров. Добавьте первый!</div>' +
+          '</div>';
+        return;
+      }
+      filters.forEach(function(f) {
+        container.appendChild(renderFilter(f));
+      });
+    }).catch(function() {
+      container.innerHTML = '<div class="empty-state">Не удалось загрузить фильтры</div>';
+    });
+  }
+
+  function loadStats() {
+    api('/stats').then(function(d) {
+      $('statFilters').textContent = d.active_filters;
+      $('statSeen').textContent = d.total_listings_seen;
+      $('statPoll').textContent = '60';
+    }).catch(function() {});
+  }
+
+  function addFilter() {
+    var city = $('citySelect').value;
+    var cat = $('catSelect').value || null;
+    var query = $('queryInput').value.trim() || null;
+
+    if (!city) {
+      showToast('Выберите город');
+      return;
+    }
+
+    api('/filters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city: city, category: cat, query: query })
+    }).then(function() {
+      showToast('Фильтр добавлен!');
+      $('queryInput').value = '';
+      loadFilters();
+      loadStats();
+    }).catch(function() {
+      showToast('Ошибка при добавлении');
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    var toggle = e.target.closest('.toggle-switch');
+    if (toggle) {
+      var id = toggle.getAttribute('data-id');
+      var active = toggle.classList.toggle('active');
+      api('/filters/' + id + '/toggle', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: active })
+      }).catch(function() { showToast('Ошибка'); });
+      return;
+    }
+
+    var del = e.target.closest('.btn-danger');
+    if (del) {
+      var id = del.getAttribute('data-id');
+      api('/filters/' + id, { method: 'DELETE' }).then(function() {
+        showToast('Фильтр удалён');
+        loadFilters();
+        loadStats();
+      }).catch(function() { showToast('Ошибка'); });
+    }
+  });
+
+  $('addBtn').addEventListener('click', addFilter);
+
+  initSelects();
+  loadFilters();
+  loadStats();
+  setInterval(loadStats, 30000);
+})();
+</script>
+</body>
+</html>
